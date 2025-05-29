@@ -1,0 +1,117 @@
+.navbar-bottom {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #2b2f34;
+    padding: 10px;
+    box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    margin-top: 35px;
+}
+
+.navbar-links {
+    list-style: none;
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    transition: max-height 0.3s ease-out;
+}
+
+.navbar-links.open {
+    max-height: 200px;
+}
+
+.navbar-links li {
+    display: inline;
+    margin: 0;
+}
+
+.navbar-button {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 6px 10px;
+    border-radius: 20px;
+    width: auto;
+    max-width: 150px;
+    min-width: 100px;
+    /* Voeg een minimum breedte toe zodat de knop niet te smal wordt */
+}
+
+.create-post-button {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.create-post-button:hover {
+    background-color: #218838;
+    border-color: #218838;
+}
+
+/* Hamburger menu */
+.hamburger {
+    display: none;
+    font-size: 30px;
+    color: #f8f9fa;
+    cursor: pointer;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+    .navbar-bottom {
+        padding: 5px;
+    }
+
+    .navbar-links {
+        flex-direction: column;
+        max-height: 0;
+        overflow: hidden;
+    }
+
+    .navbar-links.open {
+        max-height: 200px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .navbar-links li {
+        margin: 5px 0;
+    }
+
+    .navbar-button {
+        width: 45%;
+        /* Breedte van knoppen ingesteld op 45% van het scherm */
+        max-width: 120px;
+        min-width: 90px;
+        /* Voeg een minimum breedte toe zodat knoppen niet te smal worden */
+        text-align: center;
+        font-size: 12px;
+        padding: 5px 8px;
+        margin: 3px 0;
+        border-radius: 15px;
+    }
+
+    .hamburger {
+        display: block;
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-button {
+        font-size: 10px;
+        padding: 4px 6px;
+        margin: 2px 0;
+        width: 45%;
+        max-width: 100px;
+        min-width: 80px;
+        /* Zorg ervoor dat de knop niet te klein wordt */
+    }
+
+    .navbar-links.open {
+        justify-content: center;
+    }
+}
