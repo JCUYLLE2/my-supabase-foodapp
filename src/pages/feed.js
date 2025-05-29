@@ -1,23 +1,15 @@
 import { useEffect, useState } from 'react';
-import {
-  Container,
-  Card,
-  Button,
-  Spinner,
-  Row,
-  Col,
-} from 'react-bootstrap';
+import { Container, Card, Button, Spinner, Row, Col } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function FeedPage() {
-  const [meals, setMeals] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Controleer of de gebruiker is ingelogd
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -31,25 +23,36 @@ export default function FeedPage() {
   }, [router]);
 
   useEffect(() => {
-    // Wacht tot sessie is bevestigd
     if (!sessionChecked) return;
 
-    const fetchMeals = async () => {
+    const fetchPosts = async () => {
       setLoading(true);
-      try {
-        const res = await fetch(
-          'https://www.themealdb.com/api/json/v1/1/filter.php?i=Chicken'
-        );
-        const { meals: data } = await res.json();
-        setMeals(data || []);
-      } catch (err) {
-        console.error('Error fetching meals:', err);
-        setMeals([]);
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          dishname,
+          description,
+          image_url,
+          recipe_link,
+          created_at,
+          users (
+            gebruikersnaam,
+            profile_pic
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fout bij ophalen van posts:', error.message);
+        setPosts([]);
+      } else {
+        setPosts(data);
       }
       setLoading(false);
     };
 
-    fetchMeals();
+    fetchPosts();
   }, [sessionChecked]);
 
   if (!sessionChecked) {
@@ -70,29 +73,58 @@ export default function FeedPage() {
           <Spinner animation="border" variant="primary" />
           <p>Gerechten aan het laden…</p>
         </div>
-      ) : meals.length === 0 ? (
-        <p>😕 Geen gerechten gevonden.</p>
+      ) : posts.length === 0 ? (
+        <p>😕 Geen posts gevonden.</p>
       ) : (
         <Row xs={1} md={2} lg={3} className="g-4">
-          {meals.map((meal) => (
-            <Col key={meal.idMeal}>
+          {posts.map((post) => (
+            <Col key={post.id}>
               <Card>
-                {meal.strMealThumb && (
-                  <Card.Img
-                    variant="top"
-                    src={meal.strMealThumb}
-                    alt={meal.strMeal}
-                  />
+                {post.image_url && (
+                  <Card.Img variant="top" src={post.image_url} alt={post.dishname} />
                 )}
                 <Card.Body>
-                  <Card.Title>{meal.strMeal}</Card.Title>
-                  <Button
-                    variant="primary"
-                    href={`https://www.themealdb.com/meal.php?c=${meal.idMeal}`}
-                    target="_blank"
-                  >
-                    Bekijk recept
-                  </Button>
+                  <Card.Title>{post.dishname}</Card.Title>
+                  <Card.Text>{post.description}</Card.Text>
+
+                  {post.recipe_link && (
+                    <Button
+                      variant="primary"
+                      href={post.recipe_link}
+                      target="_blank"
+                      className="mb-2"
+                    >
+                      Bekijk recept
+                    </Button>
+                  )}
+
+                  <div className="d-flex align-items-center mt-3">
+                    {post.users?.profile_pic ? (
+                      <img
+                        src={post.users.profile_pic}
+                        alt="Profielfoto"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          marginRight: 10,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: '#ccc',
+                          marginRight: 10,
+                        }}
+                      />
+                    )}
+                    <small className="text-muted">
+                      Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'}
+                    </small>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
