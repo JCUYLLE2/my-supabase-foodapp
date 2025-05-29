@@ -20,7 +20,7 @@ export default function TopBar() {
         setUser(currentUser);
         const { data } = await supabase
           .from('users')
-          .select('gebruikersnaam, profilePic')
+          .select('gebruikersnaam, profile_pic')
           .eq('id', currentUser.id)
           .single();
 

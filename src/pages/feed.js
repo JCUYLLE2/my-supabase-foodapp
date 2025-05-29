@@ -7,16 +7,36 @@ import {
   Row,
   Col,
 } from 'react-bootstrap';
+import { useRouter } from 'next/router';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function FeedPage() {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
+    // Controleer of de gebruiker is ingelogd
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/');
+      } else {
+        setSessionChecked(true);
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  useEffect(() => {
+    // Wacht tot sessie is bevestigd
+    if (!sessionChecked) return;
+
     const fetchMeals = async () => {
       setLoading(true);
       try {
-        // Voorbeeld: haal alle gerechten op met 'Chicken' als ingrediënt
         const res = await fetch(
           'https://www.themealdb.com/api/json/v1/1/filter.php?i=Chicken'
         );
@@ -30,7 +50,16 @@ export default function FeedPage() {
     };
 
     fetchMeals();
-  }, []);
+  }, [sessionChecked]);
+
+  if (!sessionChecked) {
+    return (
+      <Container className="mt-5 text-center">
+        <Spinner animation="border" variant="primary" />
+        <p>Sessie wordt gecontroleerd…</p>
+      </Container>
+    );
+  }
 
   return (
     <Container className="mt-4">

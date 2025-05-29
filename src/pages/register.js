@@ -1,7 +1,8 @@
+// src/pages/register.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabaseClient';
-import { Form, Button, Container, Alert } from 'react-bootstrap';
+import { Form, Button, Container, Alert, Spinner } from 'react-bootstrap';
 import { FaUserCircle } from 'react-icons/fa';
 
 export default function RegisterPage() {
@@ -14,11 +15,12 @@ export default function RegisterPage() {
     profilePic: null,
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
       [name]: files ? files[0] : value,
     }));
@@ -27,39 +29,46 @@ export default function RegisterPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
+    // 1️⃣ Signup
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
     });
-
     if (signUpError) {
       setError(signUpError.message);
+      setLoading(false);
       return;
     }
 
-    // Haal zeker de ingelogde user op
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      setError("Kon user info niet ophalen.");
+    // Haal userId direct uit signUpData
+    const userId = signUpData.user?.id;
+    if (!userId) {
+      setError('Kon user ID niet ophalen na registratie.');
+      setLoading(false);
       return;
     }
 
-    const userId = userData.user.id;
+    // 2️⃣ Upload profielfoto (optioneel)
     let profilePicURL = '';
-
     if (form.profilePic) {
-      const filePath = `profilePics/${userId}/${form.profilePic.name}`;
-      const { error: uploadError } = await supabase.storage
+      const uniqueName = `${Date.now()}-${form.profilePic.name}`;
+      const path = `avatars/${userId}/${uniqueName}`;
+      const { error: uploadError } = await supabase
+        .storage
         .from('avatars')
-        .upload(filePath, form.profilePic);
-
-      if (!uploadError) {
-        const { data: publicUrl } = supabase.storage.from('avatars').getPublicUrl(filePath);
-        profilePicURL = publicUrl.publicUrl;
+        .upload(path, form.profilePic, { cacheControl: '3600', upsert: true });
+      if (uploadError) {
+        setError('Afbeelding upload mislukt: ' + uploadError.message);
+        setLoading(false);
+        return;
       }
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      profilePicURL = publicUrl;
     }
 
+    // 3️⃣ Insert in users-tabel
     const { error: insertError } = await supabase
       .from('users')
       .insert({
@@ -67,21 +76,34 @@ export default function RegisterPage() {
         gebruikersnaam: form.gebruikersnaam,
         woonplaats: form.woonplaats,
         leeftijd: form.leeftijd,
-        profilePic: profilePicURL,
+        profile_pic: profilePicURL,
       });
-
     if (insertError) {
-      setError('Fout bij opslaan in database: ' + insertError.message);
+      setError('Opslaan in database mislukt: ' + insertError.message);
+      setLoading(false);
       return;
     }
 
+    // 4️⃣ Automatische login
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
+    if (loginError) {
+      setError('Automatische login mislukt: ' + loginError.message);
+      setLoading(false);
+      return;
+    }
+
+    // 🚀 Doorsturen naar feed
     router.push('/feed');
   };
 
   return (
-    <Container className="mt-5">
+    <Container className="mt-5" style={{ maxWidth: '500px' }}>
       <h2>Register</h2>
       {error && <Alert variant="danger">{error}</Alert>}
+
       <Form onSubmit={handleRegister}>
         <Form.Group controlId="gebruikersnaam">
           <Form.Label>Gebruikersnaam</Form.Label>
@@ -92,6 +114,7 @@ export default function RegisterPage() {
             required
           />
         </Form.Group>
+
         <Form.Group controlId="woonplaats" className="mt-3">
           <Form.Label>Woonplaats</Form.Label>
           <Form.Control
@@ -101,6 +124,7 @@ export default function RegisterPage() {
             required
           />
         </Form.Group>
+
         <Form.Group controlId="leeftijd" className="mt-3">
           <Form.Label>Leeftijd</Form.Label>
           <Form.Control
@@ -111,18 +135,28 @@ export default function RegisterPage() {
             required
           />
         </Form.Group>
+
         <Form.Group controlId="profilePic" className="mt-3">
           <Form.Label>Profielfoto</Form.Label>
-          <div>
-            {!form.profilePic && <FaUserCircle size={100} />}
-            <Form.Control
-              name="profilePic"
-              type="file"
-              onChange={handleChange}
-              accept="image/*"
-            />
+          <div className="mb-2">
+            {!form.profilePic ? (
+              <FaUserCircle size={80} />
+            ) : (
+              <img
+                src={URL.createObjectURL(form.profilePic)}
+                alt="Voorbeeld"
+                style={{ width: 80, height: 80, borderRadius: '50%' }}
+              />
+            )}
           </div>
+          <Form.Control
+            name="profilePic"
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+          />
         </Form.Group>
+
         <Form.Group controlId="email" className="mt-3">
           <Form.Label>Email</Form.Label>
           <Form.Control
@@ -133,6 +167,7 @@ export default function RegisterPage() {
             required
           />
         </Form.Group>
+
         <Form.Group controlId="password" className="mt-3">
           <Form.Label>Wachtwoord</Form.Label>
           <Form.Control
@@ -143,8 +178,26 @@ export default function RegisterPage() {
             required
           />
         </Form.Group>
-        <Button type="submit" variant="primary" className="mt-4 w-100">
-          Register
+
+        <Button
+          type="submit"
+          variant="primary"
+          className="mt-4 w-100"
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+              /> Even geduld…
+            </>
+          ) : (
+            'Register'
+          )}
         </Button>
       </Form>
     </Container>
