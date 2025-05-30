@@ -181,7 +181,13 @@ export default function FeedPage() {
                             }}
                           />
                         )}
-                        <small className="text-muted">
+
+                        {/* 👇 Klikbare gebruikersnaam */}
+                        <small
+                          className="text-muted"
+                          style={{ cursor: 'pointer', textDecoration: 'underline', color: '#007bff' }}
+                          onClick={() => router.push(`/user/${post.user_id}`)}
+                        >
                           Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'}
                         </small>
                       </div>
