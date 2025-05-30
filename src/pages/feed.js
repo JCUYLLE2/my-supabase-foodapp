@@ -7,6 +7,7 @@ export default function FeedPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -15,6 +16,7 @@ export default function FeedPage() {
       if (!session) {
         router.push('/');
       } else {
+        setCurrentUserId(session.user.id);
         setSessionChecked(true);
       }
     };
@@ -22,33 +24,56 @@ export default function FeedPage() {
     checkSession();
   }, [router]);
 
+  const fetchPosts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        id,
+        dishname,
+        description,
+        image_url,
+        recipe_link,
+        created_at,
+        users (
+          gebruikersnaam,
+          profile_pic
+        ),
+        likes (
+          user_id
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Fout bij ophalen van posts:', error.message);
+      setPosts([]);
+    } else {
+      setPosts(data);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    if (!sessionChecked) return;
+    if (sessionChecked) {
+      fetchPosts();
+    }
+  }, [sessionChecked]);
 
-    const fetchPosts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          users (
-            gebruikersnaam,
-            profile_pic
-          )
-        `)
-        .order('created_at', { ascending: false });
+  const toggleLike = async (postId, likedByUser) => {
+    if (!currentUserId) return;
 
-      if (error) {
-        console.error('Fout bij ophalen van posts:', error.message);
-        setPosts([]);
-      } else {
-        setPosts(data);
-      }
-      setLoading(false);
-    };
+    if (likedByUser) {
+      await supabase
+        .from('likes')
+        .delete()
+        .match({ post_id: postId, user_id: currentUserId });
+    } else {
+      await supabase.from('likes').insert([{ post_id: postId, user_id: currentUserId }]);
+    }
 
     fetchPosts();
-  }, [sessionChecked]);
+  };
 
   if (!sessionChecked) {
     return (
@@ -72,58 +97,79 @@ export default function FeedPage() {
         <p>😕 Geen posts gevonden.</p>
       ) : (
         <Row xs={1} md={2} lg={3} className="g-4">
-          {posts.map((post) => (
-            <Col key={post.id}>
-              <Card>
-                {post.image_url && (
-                  <Card.Img variant="top" src={post.image_url} alt={post.dishname} />
-                )}
-                <Card.Body>
-                  <Card.Title>{post.dishname}</Card.Title>
-                  <Card.Text>{post.description}</Card.Text>
+          {posts.map((post) => {
+            const hasLiked = post.likes?.some((like) => like.user_id === currentUserId);
 
-                  {post.recipe_link && (
-                    <Button
-                      variant="primary"
-                      href={post.recipe_link}
-                      target="_blank"
-                      className="mb-2"
-                    >
-                      Bekijk recept
-                    </Button>
+            return (
+              <Col key={post.id}>
+                <Card>
+                  {post.image_url && (
+                    <Card.Img variant="top" src={post.image_url} alt={post.dishname} />
                   )}
+                  <Card.Body>
+                    <Card.Title
+                      style={{ cursor: 'pointer', color: '#007bff', textDecoration: 'underline' }}
+                      onClick={() => router.push(`/post/${post.id}`)}
+                    >
+                      {post.dishname}
+                    </Card.Title>
 
-                  <div className="d-flex align-items-center mt-3">
-                    {post.users?.profile_pic ? (
-                      <img
-                        src={post.users.profile_pic}
-                        alt="Profielfoto"
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          marginRight: 10,
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          backgroundColor: '#ccc',
-                          marginRight: 10,
-                        }}
-                      />
+                    <Card.Text>{post.description}</Card.Text>
+
+                    {post.recipe_link && (
+                      <Button
+                        variant="primary"
+                        href={post.recipe_link}
+                        target="_blank"
+                        className="mb-2"
+                      >
+                        Bekijk recept
+                      </Button>
                     )}
-                    <small className="text-muted">
-                      Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'}
-                    </small>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
+
+                    <div className="d-flex align-items-center justify-content-between mt-3">
+                      <div className="d-flex align-items-center">
+                        {post.users?.profile_pic ? (
+                          <img
+                            src={post.users.profile_pic}
+                            alt="Profielfoto"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              marginRight: 10,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              backgroundColor: '#ccc',
+                              marginRight: 10,
+                            }}
+                          />
+                        )}
+                        <small className="text-muted">
+                          Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'}
+                        </small>
+                      </div>
+
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => toggleLike(post.id, hasLiked)}
+                        style={{ textDecoration: 'none', color: hasLiked ? 'red' : '#888' }}
+                      >
+                        {hasLiked ? '❤️' : '🤍'} {post.likes?.length || 0}
+                      </Button>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            );
+          })}
         </Row>
       )}
     </Container>
