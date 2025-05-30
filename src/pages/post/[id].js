@@ -34,6 +34,7 @@ export default function PostDetails() {
           image_url,
           recipe_link,
           created_at,
+          user_id,
           users (
             gebruikersnaam,
             profile_pic
@@ -92,7 +93,6 @@ export default function PostDetails() {
         .insert({ post_id: id, user_id: user.id });
     }
 
-    // Refresh like status
     const { count } = await supabase
       .from('likes')
       .select('*', { count: 'exact', head: true })
@@ -134,41 +134,66 @@ export default function PostDetails() {
           <Card.Text>{post.description}</Card.Text>
 
           {post.recipe_link && (
-            <Button variant="primary" href={post.recipe_link} target="_blank" className="mb-3">
+            <Button
+              variant="primary"
+              href={post.recipe_link}
+              target="_blank"
+              className="mb-3"
+            >
               Bekijk recept
             </Button>
           )}
 
-          <div className="d-flex align-items-center mb-3">
-            {post.users?.profile_pic ? (
-              <img
-                src={post.users.profile_pic}
-                alt="Profielfoto"
-                style={{ width: 40, height: 40, borderRadius: '50%', marginRight: 10 }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  backgroundColor: '#ccc',
-                  marginRight: 10,
-                }}
-              />
-            )}
-            <small className="text-muted">
-              Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'} op{' '}
-              {new Date(post.created_at).toLocaleDateString()}
-            </small>
-          </div>
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <div className="d-flex align-items-center">
+              {post.users?.profile_pic ? (
+                <img
+                  src={post.users.profile_pic}
+                  alt="Profielfoto"
+                  onClick={() => router.push(`/user/${post.user_id}`)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    marginRight: 10,
+                    cursor: 'pointer',
+                  }}
+                />
+              ) : (
+                <div
+                  onClick={() => router.push(`/user/${post.user_id}`)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    backgroundColor: '#ccc',
+                    marginRight: 10,
+                    cursor: 'pointer',
+                  }}
+                />
+              )}
+              <small
+                className="text-muted"
+                style={{ cursor: 'pointer' }}
+                onClick={() => router.push(`/user/${post.user_id}`)}
+              >
+                Geplaatst door {post.users?.gebruikersnaam || 'Onbekend'} op{' '}
+                {new Date(post.created_at).toLocaleDateString()}
+              </small>
+            </div>
 
-          <Button
-            onClick={handleLikeToggle}
-            variant={hasLiked ? 'danger' : 'outline-primary'}
-          >
-            {hasLiked ? 'Unlike' : 'Like'} ({likeCount})
-          </Button>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={handleLikeToggle}
+              style={{
+                textDecoration: 'none',
+                color: hasLiked ? 'red' : '#888',
+              }}
+            >
+              {hasLiked ? '❤️' : '🤍'} {likeCount}
+            </Button>
+          </div>
         </Card.Body>
       </Card>
     </Container>

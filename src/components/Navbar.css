@@ -2,17 +2,23 @@
     position: fixed;
     bottom: 0;
     width: 100%;
-    background-color: #2b2f34;
-    padding: 10px;
-    box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(to right, #191516, #382E31);
+    padding: 12px 0;
+    box-shadow: 0 -3px 15px rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    margin-top: 35px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+body {
+    padding-bottom: 120px;
+    /* of iets groter dan je navbar-hoogte */
 }
 
 .navbar-links {
     list-style: none;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-evenly;
     width: 100%;
     padding: 0;
     margin: 0;
@@ -20,34 +26,48 @@
 }
 
 .navbar-links.open {
-    max-height: 200px;
+    max-height: 250px;
 }
 
 .navbar-links li {
     display: inline;
-    margin: 0;
+    margin: 0 5px;
 }
 
 .navbar-button {
     font-size: 14px;
-    font-weight: normal;
-    padding: 6px 10px;
-    border-radius: 20px;
+    font-weight: bold;
+    padding: 10px 16px;
+    border-radius: 30px;
     width: auto;
-    max-width: 150px;
     min-width: 100px;
-    /* Voeg een minimum breedte toe zodat de knop niet te smal wordt */
+    background-color: #AC274F;
+    border: none;
+    color: #fff;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(172, 39, 79, 0.4);
 }
 
+.navbar-button:hover {
+    background-color: #EB638B;
+    transform: scale(1.07);
+    box-shadow: 0 4px 15px rgba(235, 99, 139, 0.6);
+}
+
+/* Speciale knop voor Create Post */
 .create-post-button {
-    background-color: #28a745;
-    border-color: #28a745;
-    color: white;
+    background-color: #FFD9DA;
+    color: #AC274F;
+    font-weight: bold;
+    box-shadow: 0 0 15px rgba(255, 217, 218, 0.8);
+    border: 2px solid #AC274F;
 }
 
 .create-post-button:hover {
-    background-color: #218838;
-    border-color: #218838;
+    background-color: #EB638B;
+    color: white;
+    border-color: #EB638B;
+    box-shadow: 0 0 18px rgba(235, 99, 139, 0.9);
 }
 
 /* Hamburger menu */
@@ -56,12 +76,13 @@
     font-size: 30px;
     color: #f8f9fa;
     cursor: pointer;
+    padding-left: 15px;
 }
 
-/* Media queries for responsiveness */
+/* Media queries voor responsive gedrag */
 @media (max-width: 768px) {
     .navbar-bottom {
-        padding: 5px;
+        padding: 8px;
     }
 
     .navbar-links {
@@ -71,44 +92,35 @@
     }
 
     .navbar-links.open {
-        max-height: 200px;
+        max-height: 250px;
         flex-direction: row;
         flex-wrap: wrap;
-        justify-content: space-between;
+        justify-content: center;
     }
 
     .navbar-links li {
-        margin: 5px 0;
+        margin: 6px 0;
     }
 
     .navbar-button {
-        width: 45%;
-        /* Breedte van knoppen ingesteld op 45% van het scherm */
-        max-width: 120px;
-        min-width: 90px;
-        /* Voeg een minimum breedte toe zodat knoppen niet te smal worden */
-        text-align: center;
+        width: 42%;
         font-size: 12px;
-        padding: 5px 8px;
-        margin: 3px 0;
-        border-radius: 15px;
+        padding: 8px 12px;
+        border-radius: 25px;
     }
 
     .hamburger {
         display: block;
-        text-align: left;
     }
 }
 
 @media (max-width: 480px) {
     .navbar-button {
         font-size: 10px;
-        padding: 4px 6px;
+        padding: 6px 10px;
         margin: 2px 0;
         width: 45%;
-        max-width: 100px;
         min-width: 80px;
-        /* Zorg ervoor dat de knop niet te klein wordt */
     }
 
     .navbar-links.open {

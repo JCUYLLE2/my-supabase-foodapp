@@ -1,9 +1,7 @@
-// src/components/Navbar.js
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from 'react-bootstrap';
 import { supabase } from '@/lib/supabaseClient';
-
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,17 +33,17 @@ export default function Navbar() {
             className="navbar-button"
             onClick={() => router.push('/profile')}
           >
-            Profile
+            Edit Profile
           </Button>
         </li>
         <li>
           <Button
-            variant="outline-success"
+            variant="outline-info"
             size="lg"
             className="navbar-button"
-            onClick={() => router.push('/feed')}
+            onClick={() => router.push('/myposts')}
           >
-            Feed
+            My Recipes
           </Button>
         </li>
         <li>
@@ -58,6 +56,17 @@ export default function Navbar() {
             + Create Post
           </Button>
         </li>
+        <li>
+          <Button
+            variant="outline-success"
+            size="lg"
+            className="navbar-button"
+            onClick={() => router.push('/feed')}
+          >
+            Feed
+          </Button>
+        </li>
+        
         <li>
           <Button
             variant="outline-danger"
