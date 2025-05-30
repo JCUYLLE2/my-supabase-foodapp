@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Container, Card, Button, Spinner, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Spinner, Row, Col, Form } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -8,6 +8,8 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
   const router = useRouter();
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function FeedPage() {
         image_url,
         recipe_link,
         created_at,
+        user_id,
         users (
           gebruikersnaam,
           profile_pic
@@ -43,7 +46,7 @@ export default function FeedPage() {
           user_id
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: sortOrder === 'asc' });
 
     if (error) {
       console.error('Fout bij ophalen van posts:', error.message);
@@ -58,7 +61,7 @@ export default function FeedPage() {
     if (sessionChecked) {
       fetchPosts();
     }
-  }, [sessionChecked]);
+  }, [sessionChecked, sortOrder]);
 
   const toggleLike = async (postId, likedByUser) => {
     if (!currentUserId) return;
@@ -75,6 +78,14 @@ export default function FeedPage() {
     fetchPosts();
   };
 
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch =
+      post.dishname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
+  });
+
   if (!sessionChecked) {
     return (
       <Container className="mt-5 text-center">
@@ -88,16 +99,35 @@ export default function FeedPage() {
     <Container className="mt-4">
       <h2 className="mb-4">Feed</h2>
 
+      <Form className="mb-4">
+        <Row>
+          <Col md={9} className="mb-2">
+            <Form.Control
+              type="text"
+              placeholder="Zoek op gerecht of beschrijving..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Col>
+          <Col md={3} className="mb-2">
+            <Form.Select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+              <option value="desc">Nieuwste eerst</option>
+              <option value="asc">Oudste eerst</option>
+            </Form.Select>
+          </Col>
+        </Row>
+      </Form>
+
       {loading ? (
         <div className="text-center">
           <Spinner animation="border" variant="primary" />
           <p>Gerechten aan het laden…</p>
         </div>
-      ) : posts.length === 0 ? (
+      ) : filteredPosts.length === 0 ? (
         <p>😕 Geen posts gevonden.</p>
       ) : (
         <Row xs={1} md={2} lg={3} className="g-4">
-          {posts.map((post) => {
+          {filteredPosts.map((post) => {
             const hasLiked = post.likes?.some((like) => like.user_id === currentUserId);
 
             return (
