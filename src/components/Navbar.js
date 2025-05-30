@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from 'react-bootstrap';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
+      setIsAdmin(userId === adminId);
+    };
+
+    checkAdmin();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -66,7 +78,20 @@ export default function Navbar() {
             Feed
           </Button>
         </li>
-        
+
+        {isAdmin && (
+          <li>
+            <Button
+              variant="warning"
+              size="lg"
+              className="navbar-button"
+              onClick={() => router.push('/admin')}
+            >
+              Admin
+            </Button>
+          </li>
+        )}
+
         <li>
           <Button
             variant="outline-danger"
