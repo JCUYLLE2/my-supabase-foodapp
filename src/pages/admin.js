@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabaseClient';
-import { Container, Nav, Tab, Table, Button, Spinner } from 'react-bootstrap';
+import { Container, Nav, Tab, Table, Button, Spinner, Form, Row, Col, Badge } from 'react-bootstrap';
 
 export default function AdminDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -50,6 +53,18 @@ export default function AdminDashboard() {
     setUsers((prev) => prev.filter((u) => u.id !== id));
   };
 
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch = post.dishname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          post.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesUser = filterUserId ? post.user_id === filterUserId : true;
+    return matchesSearch && matchesUser;
+  });
+
+  const filteredUsers = users.filter((user) =>
+    user.gebruikersnaam.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.woonplaats.toLowerCase().includes(userSearchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
       <Container className="mt-5 text-center">
@@ -62,6 +77,11 @@ export default function AdminDashboard() {
   return (
     <Container className="mt-4">
       <h2 className="mb-4">Admin Dashboard</h2>
+      <Row className="mb-3">
+        <Col><Badge bg="primary">Posts: {posts.length}</Badge></Col>
+        <Col><Badge bg="secondary">Gebruikers: {users.length}</Badge></Col>
+      </Row>
+
       <Tab.Container defaultActiveKey="posts">
         <Nav variant="tabs">
           <Nav.Item>
@@ -73,6 +93,30 @@ export default function AdminDashboard() {
         </Nav>
         <Tab.Content className="mt-4">
           <Tab.Pane eventKey="posts">
+            <Form className="mb-3">
+              <Row>
+                <Col md={6}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Zoek op gerechtnaam of beschrijving..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </Col>
+                <Col md={6}>
+                  <Form.Select
+                    value={filterUserId}
+                    onChange={(e) => setFilterUserId(e.target.value)}
+                  >
+                    <option value="">-- Filter op gebruiker --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.gebruikersnaam}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+              </Row>
+            </Form>
+
             <Table striped bordered hover responsive>
               <thead>
                 <tr>
@@ -84,13 +128,21 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {posts.map((post) => (
+                {filteredPosts.map((post) => (
                   <tr key={post.id}>
                     <td>{post.dishname}</td>
                     <td>{post.description}</td>
                     <td>{post.user_id}</td>
                     <td>{new Date(post.created_at).toLocaleDateString()}</td>
                     <td>
+                      <Button
+                        variant="info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => router.push(`/post/${post.id}`)}
+                      >
+                        Bekijk
+                      </Button>
                       <Button
                         variant="danger"
                         size="sm"
@@ -106,6 +158,14 @@ export default function AdminDashboard() {
           </Tab.Pane>
 
           <Tab.Pane eventKey="users">
+            <Form className="mb-3">
+              <Form.Control
+                type="text"
+                placeholder="Zoek op gebruikersnaam of woonplaats..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+              />
+            </Form>
             <Table striped bordered hover responsive>
               <thead>
                 <tr>
@@ -116,7 +176,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id}>
                     <td>{user.gebruikersnaam}</td>
                     <td>{user.woonplaats}</td>

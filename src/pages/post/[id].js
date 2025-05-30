@@ -12,11 +12,17 @@ export default function PostDetails() {
   const [likeCount, setLikeCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      setUser(sessionData.session?.user || null);
+      const currentUser = sessionData.session?.user || null;
+      setUser(currentUser);
+
+      if (currentUser && currentUser.id === process.env.NEXT_PUBLIC_ADMIN_ID) {
+        setIsAdmin(true);
+      }
     };
     fetchSession();
   }, []);
@@ -82,15 +88,9 @@ export default function PostDetails() {
     if (!user || !id) return;
 
     if (hasLiked) {
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('post_id', id)
-        .eq('user_id', user.id);
+      await supabase.from('likes').delete().eq('post_id', id).eq('user_id', user.id);
     } else {
-      await supabase
-        .from('likes')
-        .insert({ post_id: id, user_id: user.id });
+      await supabase.from('likes').insert({ post_id: id, user_id: user.id });
     }
 
     const { count } = await supabase
@@ -121,9 +121,16 @@ export default function PostDetails() {
 
   return (
     <Container className="mt-4" style={{ maxWidth: 600 }}>
-      <Button variant="secondary" onClick={() => router.back()} className="mb-3">
-        ← Terug naar feed
-      </Button>
+      <div className="d-flex justify-content-between mb-3">
+        <Button variant="secondary" onClick={() => router.back()}>
+          ← Terug naar feed
+        </Button>
+        {isAdmin && (
+          <Button variant="warning" onClick={() => router.push('/admin')}>
+            ↩ Terug naar Admin
+          </Button>
+        )}
+      </div>
 
       <Card>
         {post.image_url && (
