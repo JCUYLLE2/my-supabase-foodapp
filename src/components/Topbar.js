@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { FaUserCircle } from 'react-icons/fa';
 import { supabase } from '@/lib/supabaseClient';
 
-
 export default function TopBar() {
   const [user, setUser] = useState(null);
   const [userName, setUserName] = useState('');
@@ -26,7 +25,7 @@ export default function TopBar() {
 
         if (data) {
           setUserName(data.gebruikersnaam || currentUser.email);
-          setProfilePic(data.profilePic || '');
+          setProfilePic(data.profile_pic || '');
         }
       }
     };

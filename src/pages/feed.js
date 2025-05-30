@@ -30,12 +30,7 @@ export default function FeedPage() {
       const { data, error } = await supabase
         .from('posts')
         .select(`
-          id,
-          dishname,
-          description,
-          image_url,
-          recipe_link,
-          created_at,
+          *,
           users (
             gebruikersnaam,
             profile_pic
