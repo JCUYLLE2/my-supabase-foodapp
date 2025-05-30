@@ -11,10 +11,8 @@ export default function TopBar() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData.session?.user;
-
+    const getUserData = async (session) => {
+      const currentUser = session?.user;
       if (currentUser) {
         setUser(currentUser);
         const { data } = await supabase
@@ -27,10 +25,29 @@ export default function TopBar() {
           setUserName(data.gebruikersnaam || currentUser.email);
           setProfilePic(data.profile_pic || '');
         }
+      } else {
+        setUser(null);
+        setUserName('');
+        setProfilePic('');
       }
     };
 
-    fetchUser();
+    // Initieel ophalen
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      getUserData(session);
+    });
+
+    // Luisteren naar login/logout
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        getUserData(session);
+      }
+    );
+
+    // Cleanup
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogoClick = () => {
