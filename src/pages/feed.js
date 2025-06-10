@@ -12,6 +12,7 @@ export default function FeedPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const router = useRouter();
 
+  // Check sessie en gebruiker
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -22,10 +23,10 @@ export default function FeedPage() {
         setSessionChecked(true);
       }
     };
-
     checkSession();
   }, [router]);
 
+  // Ophalen posts
   const fetchPosts = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -57,32 +58,59 @@ export default function FeedPage() {
     setLoading(false);
   };
 
+  // Data ophalen wanneer sessie is gecontroleerd of sortering wijzigt
   useEffect(() => {
     if (sessionChecked) {
       fetchPosts();
     }
   }, [sessionChecked, sortOrder]);
 
+  // Toggle like functie
   const toggleLike = async (postId, likedByUser) => {
     if (!currentUserId) return;
 
-    if (likedByUser) {
-      await supabase
-        .from('likes')
-        .delete()
-        .match({ post_id: postId, user_id: currentUserId });
-    } else {
-      await supabase.from('likes').insert([{ post_id: postId, user_id: currentUserId }]);
-    }
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post.id !== postId) return post;
 
-    fetchPosts();
+        let updatedLikes = post.likes ? [...post.likes] : [];
+
+        if (likedByUser) {
+          // Verwijder like uit database
+          supabase
+            .from('likes')
+            .delete()
+            .match({ post_id: postId, user_id: currentUserId })
+            .then(() => {
+              // Optioneel: error handling
+            });
+          // Verwijder like uit lokale array
+          updatedLikes = updatedLikes.filter((like) => like.user_id !== currentUserId);
+        } else {
+          // Voeg like toe in database
+          supabase
+            .from('likes')
+            .insert([{ post_id: postId, user_id: currentUserId }])
+            .then(() => {
+              // Optioneel: error handling
+            });
+          // Voeg like toe aan lokale array
+          updatedLikes = [...updatedLikes, { user_id: currentUserId }];
+        }
+
+        // Return updated post
+        return {
+          ...post,
+          likes: updatedLikes,
+        };
+      })
+    );
   };
 
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =
       post.dishname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.description?.toLowerCase().includes(searchTerm.toLowerCase());
-
     return matchesSearch;
   });
 
@@ -99,6 +127,7 @@ export default function FeedPage() {
     <Container className="mt-4">
       <h2 className="mb-4">Feed</h2>
 
+      {/* Zoek- en sorteermenu */}
       <Form className="mb-4">
         <Row>
           <Col md={9} className="mb-2">
@@ -118,6 +147,7 @@ export default function FeedPage() {
         </Row>
       </Form>
 
+      {/* Laden of posts */}
       {loading ? (
         <div className="text-center">
           <Spinner animation="border" variant="primary" />
@@ -157,6 +187,7 @@ export default function FeedPage() {
                       </Button>
                     )}
 
+                    {/* Auteur en Like knop */}
                     <div className="d-flex align-items-center justify-content-between mt-3">
                       <div className="d-flex align-items-center">
                         {post.users?.profile_pic ? (
@@ -182,7 +213,7 @@ export default function FeedPage() {
                           />
                         )}
 
-                        {/* 👇 Klikbare gebruikersnaam */}
+                        {/* Gebruikersnaam */}
                         <small
                           className="text-muted"
                           style={{ cursor: 'pointer', textDecoration: 'underline', color: '#007bff' }}
@@ -192,6 +223,7 @@ export default function FeedPage() {
                         </small>
                       </div>
 
+                      {/* Like knop */}
                       <Button
                         variant="link"
                         size="sm"

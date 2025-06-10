@@ -6,17 +6,42 @@ import { supabase } from '@/lib/supabaseClient';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const router = useRouter();
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
-      setIsAdmin(userId === adminId);
+
+      if (session) {
+        setIsLoggedIn(true);
+        const userId = session.user?.id;
+        const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
+        setIsAdmin(userId === adminId);
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
     };
 
-    checkAdmin();
+    checkSession();
+
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setIsLoggedIn(true);
+        const userId = session.user?.id;
+        const adminId = process.env.NEXT_PUBLIC_ADMIN_ID;
+        setIsAdmin(userId === adminId);
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -31,6 +56,10 @@ export default function Navbar() {
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
+
+  if (!isLoggedIn) {
+    return null; 
+  }
 
   return (
     <nav className="navbar-bottom">

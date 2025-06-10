@@ -1,4 +1,3 @@
-// src/components/Topbar.js
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { FaUserCircle } from 'react-icons/fa';
@@ -54,13 +53,20 @@ export default function TopBar() {
     router.push(user ? '/feed' : '/');
   };
 
+  // Nieuwe functie om naar het profiel van de gebruiker te navigeren
+  const goToUserProfile = () => {
+    if (user) {
+      router.push(`/user/${user.id}`);
+    }
+  };
+
   return (
     <div className="top-bar">
       <div className="logo" onClick={handleLogoClick}>
         <img src="/logo.png" alt="App Logo" className="logo-img" />
       </div>
       {user && (
-        <div className="user-info">
+        <div className="user-info" style={{ cursor: 'pointer' }} onClick={goToUserProfile}>
           {profilePic ? (
             <img
               src={profilePic}
